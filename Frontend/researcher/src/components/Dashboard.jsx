@@ -7,6 +7,7 @@ function Dashboard() {
   const handleSubmit = (e) => {
     e.preventDefault();
     // API Call later
+    setQuery("");
   }
 
   return (

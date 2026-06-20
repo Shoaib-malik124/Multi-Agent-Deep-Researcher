@@ -6,16 +6,16 @@ function Documents() {
   const { user } = useUser()
 
   return (
-    <main className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-slate-50 px-4 py-16">
+    <main className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 sm:px-6 sm:py-16">
 
       <Dashbackground />
 
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200/50">
+      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl shadow-slate-200/50 sm:p-8">
 
-        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50">
+        <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 sm:mb-5 sm:h-12 sm:w-12">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-indigo-500"
+            className="h-5 w-5 text-indigo-500 sm:h-6 sm:w-6"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -25,11 +25,11 @@ function Documents() {
           </svg>
         </div>
 
-        <h1 className="mb-1 text-xl font-bold text-slate-900">
+        <h1 className="mb-1 text-lg font-bold text-slate-900 sm:text-xl">
           Your document is ready
         </h1>
-        <p className="mb-6 text-sm text-slate-500">
-          "We've finished generating your research document. Download it below."
+        <p className="mb-5 text-sm text-slate-500 sm:mb-6">
+          We've finished generating your research document. Download it below.
         </p>
 
         <button

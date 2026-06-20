@@ -1,28 +1,27 @@
 import React, { useState } from 'react'
-import Dashbackground from './Dashbackground';
-import { useUser } from "@clerk/clerk-react";
+import { useUser } from '@clerk/clerk-react'
+import Dashbackground from './Dashbackground.jsx'
 
 function Dashboard() {
-  const [query, setQuery] = useState('');
-  const {user}=useUser()
+  const { user } = useUser()
+  const [query, setQuery] = useState('')
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     // API Call later
-    setQuery("");
   }
 
   return (
-    <main className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-slate-50 px-4 py-16">
+    <main className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 sm:px-6 sm:py-16">
 
-      <Dashbackground/>
+      <Dashbackground />
 
-      <div className="relative w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50">
+      <div className="relative w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/50 sm:p-8">
 
-        <h1 className="mb-1 text-2xl font-bold text-slate-900">
+        <h1 className="mb-1 text-xl font-bold text-slate-900 sm:text-2xl">
           Start Your Research
         </h1>
-        <p className="mb-6 text-sm text-slate-500">
+        <p className="mb-5 text-sm text-slate-500 sm:mb-6">
           Describe Your Research Area Topic.
         </p>
 
@@ -33,16 +32,16 @@ function Dashboard() {
           <textarea
             id="query-taker"
             placeholder={
-              user?"Enter a concise and detailed query about your research topic":"Login/Signup to your account"
+              user ? "Describe your research topic" : "Login/Signup to continue"
             }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            rows={5}
-            className="w-full resize-none rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+            rows={4}
+            className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 sm:px-4 sm:py-3 sm:rows-5"
           />
           <button
             type="submit"
-            className="mt-2 self-end rounded-lg bg-indigo-500 px-5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-2 w-full rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:self-end sm:py-2"
             disabled={!query.trim() || !user}
           >
             Upload query

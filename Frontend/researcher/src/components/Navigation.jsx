@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 
-function NavigationBar() {
-  const [isOpen, setIsOpen] = useState(false)
+import { useClerk,UserButton,useUser } from "@clerk/clerk-react";
 
-  const closeMenu = () => setIsOpen(false)
+function NavigationBar() {
+  const {openSignIn}=useClerk()
+  const {user}=useUser()
+
 
   const linkClasses = ({ isActive }) =>
     `relative px-1 py-2 text-sm font-medium transition-colors duration-200 ${
@@ -26,21 +28,25 @@ function NavigationBar() {
       </div>
 
       <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
-        <NavLink to="/" className={linkClasses}>
-          Dashboard
-        </NavLink>
-        <NavLink to="/documents" className={linkClasses}>
-          Documents
-        </NavLink>
+          <NavLink to="/" className={linkClasses}>
+            Dashboard
+          </NavLink>
+          <NavLink to="/documents" className={linkClasses}>
+            Documents
+          </NavLink>
       </div>
 
       <div className="flex min-w-[100px] items-center justify-end gap-3">
-        <button className="rounded-lg px-4 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:text-white">
-          Log in
-        </button>
-        <button className="rounded-lg bg-indigo-500 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-400">
-          Sign up
-        </button>
+        {
+          user?<div className="flex items-center gap-3">
+              <p className="max-sm:hidden text-white">Hi, {user.firstName+" "+user.lastName}</p>
+              {/* upper classname-Responsiveness */}
+              <UserButton/>
+          </div>:
+          <div className="flex gap-4 max-sm:text-xs">
+              <button onClick={(e)=>{openSignIn()}} className="bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full">Register</button>
+          </div>
+        }
       </div>
 
     </nav>

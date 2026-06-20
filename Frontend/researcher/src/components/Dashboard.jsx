@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import Dashbackground from './Dashbackground';
+import { useUser } from "@clerk/clerk-react";
 
 function Dashboard() {
   const [query, setQuery] = useState('');
+  const {user}=useUser()
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -30,7 +32,9 @@ function Dashboard() {
           </label>
           <textarea
             id="query-taker"
-            placeholder="Enter a concise and detailed query about your research topic"
+            placeholder={
+              user?"Enter a concise and detailed query about your research topic":"Login/Signup to your account"
+            }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             rows={5}
@@ -39,7 +43,7 @@ function Dashboard() {
           <button
             type="submit"
             className="mt-2 self-end rounded-lg bg-indigo-500 px-5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!query.trim()}
+            disabled={!query.trim() || !user}
           >
             Upload query
           </button>

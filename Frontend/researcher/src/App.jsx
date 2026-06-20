@@ -6,7 +6,6 @@ import {BrowserRouter, Route, Routes} from 'react-router-dom'
 import Dashboard from './components/Dashboard.jsx'
 import Documents from './components/Documents.jsx'
 
-
 function App() {
   
   return (

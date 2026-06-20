@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 
-import { useClerk,UserButton,useUser } from "@clerk/clerk-react";
+import { useAuth, useClerk,UserButton,useUser } from "@clerk/clerk-react";
+import Register from './Login';
 
 function NavigationBar() {
   const {openSignIn}=useClerk()
   const {user}=useUser()
-
+  const {getToken}=useAuth() // will be used later to get the jwt for backend calls.
 
   const linkClasses = ({ isActive }) =>
     `relative px-1 py-2 text-sm font-medium transition-colors duration-200 ${
@@ -28,23 +29,40 @@ function NavigationBar() {
       </div>
 
       <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
-          <NavLink to="/" className={linkClasses}>
-            Dashboard
-          </NavLink>
-          <NavLink to="/documents" className={linkClasses}>
-            Documents
-          </NavLink>
+        {
+          user ? (
+            <div className="flex items-center gap-8">
+              <NavLink to="/" className={linkClasses} >
+                Dashboard
+              </NavLink>
+              <NavLink to={`/documents`} className={linkClasses}>
+                Documents
+              </NavLink>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+              <p className="text-sm text-slate-300">
+                You're not signed in —{' '}
+                <button className="font-medium text-indigo-400 hover:text-indigo-300"
+                  onClick={openSignIn}
+                >
+                  sign in to continue
+                </button>
+              </p>
+            </div>
+          )
+        }
       </div>
 
       <div className="flex min-w-[100px] items-center justify-end gap-3">
         {
           user?<div className="flex items-center gap-3">
               <p className="max-sm:hidden text-white">Hi, {user.firstName+" "+user.lastName}</p>
-              {/* upper classname-Responsiveness */}
               <UserButton/>
           </div>:
           <div className="flex gap-4 max-sm:text-xs">
-              <button onClick={(e)=>{openSignIn()}} className="bg-blue-600 text-white px-6 sm:px-9 py-2 rounded-full">Register</button>
+              <Register/>
           </div>
         }
       </div>

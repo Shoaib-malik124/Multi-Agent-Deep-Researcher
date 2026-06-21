@@ -1,6 +1,5 @@
 import { useState } from 'react'
 
-import './App.css'
 import NavigationBar from './components/Navigation.jsx'
 import {BrowserRouter, Route, Routes} from 'react-router-dom'
 import Dashboard from './components/Dashboard.jsx'

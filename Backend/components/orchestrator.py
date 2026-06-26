@@ -1,5 +1,3 @@
-from components.research_planner import research_planner
-from components.task_splitter import task_splitter
 from smolagents import ToolCallingAgent,MCPClient,InferenceClientModel,tool
 from prompts.prompts import COORDINATOR_PROMPT_TEMPLATE,SUBAGENT_PROMPT_TEMPLATE
 import os
@@ -7,19 +5,7 @@ import json
 import asyncio
 
 
-async def research_caller(user_query:str):
-    research_plan=""
-    async for event in research_planner(user_query):
-        if event["type"]=="chunk":
-           research_plan+=event["content"]
-           # pass to frontend
-        elif event["type"]=="plan":
-           research_plan=event["content"]
-           
-async def orchestrator(user_query:str):
-    research_plan=await research_caller(user_query)
-    subtasks=await task_splitter(research_plan) # type:ignore
-    
+async def orchestrator(user_query,research_plan,subtasks):
     FIRECRAWL_API_KEY=os.environ["FIRECRAWL_API_KEY"]
     MCP_URL=os.environ["MCP_URL"]
 

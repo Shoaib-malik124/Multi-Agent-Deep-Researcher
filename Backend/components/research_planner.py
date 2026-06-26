@@ -29,17 +29,21 @@ async def research_planner(user_query:str):
        stream=True
     )
 
+    research_plan=""
+
     try:
         async for chunk in completion:
             c=_content(chunk)
             if c:
-              yield c
+              research_plan+=c
+              yield {"type":"chunk","content":c}
             
     except TypeError:
         try:
             c=_content(completion)
             if c:
-              yield c
+              research_plan=c
         except Exception:
             pass
-        
+    
+    yield {"type":"plan","content":research_plan}

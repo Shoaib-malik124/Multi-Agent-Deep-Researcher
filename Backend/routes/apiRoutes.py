@@ -2,6 +2,7 @@ from fastapi import APIRouter,Depends
 from authentication.auth import verify_jwt
 from db.db import db_connection
 from schemas.query import ResearchRequest
+from components.orchestrator import orchestrator
 
 router=APIRouter()
 
@@ -18,6 +19,8 @@ async def deepResearch(
 ):
     query=body.query
     user_id=user["sub"]
+    final_report=await orchestrator(user_query=query)
+    
     # The pipeline for research starts here.
     pass
 

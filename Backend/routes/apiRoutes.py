@@ -9,6 +9,8 @@ from schemas.document import reports
 from datetime import datetime,timezone
 from fastapi.responses import StreamingResponse
 from pymongo.errors import PyMongoError
+from pyrate_limiter import Duration, Limiter, Rate
+from fastapi_limiter.depends import RateLimiter
 import json
 
 router=APIRouter()
@@ -18,7 +20,10 @@ async def returnDocuments(user=Depends(verify_jwt)):
     # Fetch the documents from the database for this user and return to the frontend.
     pass
 
-@router.post(f'/api/research')
+@router.post(
+    '/api/research',
+    dependencies=[Depends(RateLimiter(limiter=Limiter(Rate(5,Duration.HOUR*1))))]
+)
 async def deepResearch(
     body:ResearchRequest,
     user=Depends(verify_jwt)
@@ -34,15 +39,19 @@ async def deepResearch(
                 research_plan+=event["content"]
                 yield json.dumps(
                     {
-                      "chunk":event["content"]
+                      "type":"chunk",
+                      "content":event["content"]
                     }
                 )
             elif event["type"]=="plan":
                 research_plan=event["content"]
             elif event["type"]=="error" and event["status"]==502:
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=event["content"]
+                yield json.dumps(
+                    {
+                        "type":"error",
+                        "status":event["status"],
+                        "content":event["content"]
+                    }
                 )
             
         subtasks=await task_splitter(research_plan=research_plan) # handled by task_splitter
@@ -73,5 +82,9 @@ async def deepResearch(
 
     return StreamingResponse(
         streamChunks(),
-        media_type="application/x-ndjson"
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"   # important — disables nginx buffering if you deploy
+        }
     )

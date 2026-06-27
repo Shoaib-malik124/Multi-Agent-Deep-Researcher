@@ -1,14 +1,54 @@
 import React, { useState } from 'react'
-import { useUser } from '@clerk/clerk-react'
+import { useUser,useAuth } from '@clerk/clerk-react'
 import Dashbackground from './Dashbackground.jsx'
+import { fetchEventSource } from '@microsoft/fetch-event-source'
 
 function Dashboard() {
   const { user } = useUser()
-  const [query, setQuery] = useState('')
+  const { getToken } =useAuth()
+  const [ query, setQuery ] = useState('')
+  const [ planChunks,setPlanChunks ]=useState('')
+  const [report,setReport ]=useState('')
 
-  const handleSubmit = (e) => {
+  const handleSubmit=async(e)=>{
     e.preventDefault()
-    // API Call later
+    const backendURL=import.meta.env.BACKEND_URL
+    const routeURL=`${backendURL}/api/research`
+    const token=await getToken()
+    await fetchEventSource(routeURL,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ query }),
+
+        onopen(response) {
+          if (!response.ok) {
+            throw new Error(`Request failed: ${response.status}`)
+          }
+        },
+        onmessage(event) {
+            const data = JSON.parse(event.data)
+
+            if (data.type === 'chunk') {
+                setPlanChunks(data.content)
+            } else if (data.type === 'final_report') {
+                setReport(data.content)
+                return
+            } else if (data.type === 'error') {
+                console.error('Stream error, status: ',data.status)
+                console.error('response:', data.content)
+                return
+            } 
+        },
+        onerror(error) {
+          console.error('Connection error:', error)
+          return
+        }
+      }
+    )
   }
 
   return (

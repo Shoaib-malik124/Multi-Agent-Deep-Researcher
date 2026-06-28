@@ -3,8 +3,11 @@ from prompts.prompts import TASK_SPLITTER_SYSTEM_INSTRUCTIONS
 from pydantic import BaseModel, Field,ValidationError
 from typing import List
 from fastapi import HTTPException,status
+import logging
 import os
 import json
+
+logger=logging.getLogger(__name__)
 
 class SubTask(BaseModel):
     id: str = Field(..., description='A unique and short text identifier for subtask')
@@ -35,7 +38,6 @@ async def task_splitter(research_plan: str) -> List[SubTask]:
     try:
         splitter_client = AsyncInferenceClient(
             api_key=hf_token,
-            bill_to="huggingface",
             provider='novita'
         )
 
@@ -59,6 +61,7 @@ async def task_splitter(research_plan: str) -> List[SubTask]:
     
     try:
         result = completion.choices[0].message
+        logger.debug("Raw model response: %s", result.content)
         subtasks = json.loads(result.content)['subtasks']
         return SubTaskList(subtasks=subtasks).subtasks
     except (IndexError, AttributeError) as e:

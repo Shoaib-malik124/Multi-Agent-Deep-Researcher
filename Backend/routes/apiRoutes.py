@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Depends,HTTPException,status
+from fastapi import APIRouter,Depends,Request
 from authentication.auth import verify_jwt
 from db.db import db
 from schemas.query import ResearchRequest
@@ -9,8 +9,7 @@ from schemas.document import reports
 from datetime import datetime,timezone
 from fastapi.responses import StreamingResponse
 from pymongo.errors import PyMongoError
-from pyrate_limiter import Duration, Limiter, Rate
-from fastapi_limiter.depends import RateLimiter
+from utils.limiter import limiter
 import json
 
 router=APIRouter()
@@ -22,9 +21,10 @@ async def returnDocuments(user=Depends(verify_jwt)):
 
 @router.post(
     '/api/research',
-    dependencies=[Depends(RateLimiter(limiter=Limiter(Rate(5,Duration.HOUR*1))))]
 )
+@limiter.limit("5/minute")
 async def deepResearch(
+    request:Request,
     body:ResearchRequest,
     user=Depends(verify_jwt)
 ):
@@ -85,6 +85,6 @@ async def deepResearch(
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no"   # important — disables nginx buffering if you deploy
+            "X-Accel-Buffering": "no"   
         }
     )

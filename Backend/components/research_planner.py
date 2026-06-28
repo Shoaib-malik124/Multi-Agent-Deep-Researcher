@@ -25,7 +25,6 @@ async def research_planner(user_query:str):
     try:
         planner_client=AsyncInferenceClient(
             api_key=hf_token,
-            bill_to="huggingface",
             provider="auto"
         )
         

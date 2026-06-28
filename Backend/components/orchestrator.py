@@ -17,11 +17,13 @@ async def orchestrator(user_query: str, research_plan: str, subtasks: list):
         subagent_model_id = os.environ["ORCHESTRATOR_SUBAGENT_MODEL_ID"]
     except KeyError as e:
         logger.error(f"Missing environment variable: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Server misconfiguration, missing: {str(e)}"
-        )
-
+        yield {
+                "type":"error",
+                "status":500,
+                "content":f"Server misconfiguration, missing: {str(e)}"
+            }
+        return
+    
     coordinator_model = InferenceClientModel(
         model_id=coordinator_model_id,
         api_key=hf_token,
@@ -96,18 +98,21 @@ async def orchestrator(user_query: str, research_plan: str, subtasks: list):
 
         if not final_report:
             logger.error("Orchestrator returned empty report")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Orchestrator returned empty report"
-            )
+            yield {
+                    "type":"error",
+                    "status":502,
+                    "content":"Orchestrator returned empty report"
+                }
+        else:
+            yield {
+                    "type":"final_report",
+                    "content":final_report
+                }
 
-        return final_report
-
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Orchestrator failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Orchestrator error: {str(e)}"
-        )
+        yield {
+                "type":"error",
+                "status":502,
+                "content":f"Orchestrator error: {str(e)}"
+            }

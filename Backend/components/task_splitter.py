@@ -23,17 +23,19 @@ TASK_SPLITTER_JSON_SCHEMA = {
     "strict": True,
 }
 
-async def task_splitter(research_plan: str) -> List[SubTask]:
+async def task_splitter(research_plan: str):
 
     try:
         hf_token=os.environ["HF_TOKEN"]
         model_id=os.environ["TASK_SPLITTER_MODEL_ID"]
 
     except KeyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Server misconfiguration, missing: {str(e)}"
-        )
+        yield {
+                "type":"error",
+                "status":500,
+                "content":f"Server misconfiguration, missing: {str(e)}"
+            }
+        return
     
     try:
         splitter_client = AsyncInferenceClient(
@@ -54,33 +56,42 @@ async def task_splitter(research_plan: str) -> List[SubTask]:
             stream=False
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Text splitter API error: {str(e)}"
-        )
+        yield {
+                "type":"error",
+                "status":502,
+                "content":f"Text splitter API error: {str(e)}"
+            }
+        return
     
     try:
         result = completion.choices[0].message
         logger.debug("Raw model response: %s", result.content)
         subtasks = json.loads(result.content)['subtasks']
-        return SubTaskList(subtasks=subtasks).subtasks
+        yield {
+                "type":"subTaskList",
+                "content":SubTaskList(subtasks=subtasks).subtasks
+            }
     except (IndexError, AttributeError) as e:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Model returned unexpected response structure"
-        )
+        yield {
+                "type":"error",
+                "status":502,
+                "content":"Model returned unexpected response structure"
+            }
     except json.JSONDecodeError as e:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Model returned invalid JSON"
-        )
+        yield {
+                "type":"error",
+                "status":502,
+                "content":"Model returned invalid JSON"
+            }
     except KeyError:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Model response missing 'subtasks' key"
-        )
+        yield {
+                "type":"error",
+                "status":502,
+                "content":"Model response missing 'subtasks' key"
+            }
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Model response failed schema validation"
-        )
+        yield {
+                "type":"error",
+                "status":502,
+                "content":"Model response failed schema validation"
+            }

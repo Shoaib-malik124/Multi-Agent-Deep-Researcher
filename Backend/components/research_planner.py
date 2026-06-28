@@ -2,6 +2,7 @@ from huggingface_hub import AsyncInferenceClient
 from prompts.prompts import PLANNER_SYSTEM_INSTRUCTIONS
 from fastapi import HTTPException,status
 import os
+import json
 
 def _content(obj):
     try:
@@ -17,10 +18,12 @@ async def research_planner(user_query:str):
         hf_token=os.environ["HF_TOKEN"]
         model_id=os.environ["PLANNER_MODEL_ID"]
     except KeyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Server misconfiguration: missing {str(e)}"
-        )
+        yield {
+              "type":"error",
+              "status":500,
+              "content":f"Server misconfiguration: missing {str(e)}"
+            }
+        return
     
     try:
         planner_client=AsyncInferenceClient(
@@ -37,10 +40,13 @@ async def research_planner(user_query:str):
             stream=True
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Planner, API error: {str(e)}"
-        )
+        yield {
+              "type":"error",
+              "status":502,
+              "content":f"Planner, API error: {str(e)}"
+            }
+        
+        return
 
     research_plan=""
 

@@ -35,7 +35,7 @@ async def deepResearch(
     async def streamChunks():
         research_plan=""
         async for event in research_planner(query):
-            if event["type"]=="chunk":
+            if  event["type"]=="chunk":
                 research_plan+=event["content"]
                 yield json.dumps(
                     {
@@ -45,7 +45,7 @@ async def deepResearch(
                 )
             elif event["type"]=="plan":
                 research_plan=event["content"]
-            elif event["type"]=="error" and event["status"]==502:
+            elif event["type"]=="error":
                 yield json.dumps(
                     {
                         "type":"error",
@@ -53,9 +53,34 @@ async def deepResearch(
                         "content":event["content"]
                     }
                 )
+        subTaskList=""
+        async for event in task_splitter(research_plan=research_plan):
+            if event["type"]=="subTaskList":
+                subTaskList=event["content"]
+            else:
+                yield json.dumps(
+                    {
+                        "type":event["type"],
+                        "status":event["status"],
+                        "content":event["content"]
+                    }
+                )
+                return
+
+        final_report=""
+        async for event in orchestrator(user_query=query,research_plan=research_plan,subtasks=subTaskList):# type:ignore
+            if event["type"]=="final_report":
+                final_report=event["content"]
+            else:
+                yield json.dumps(
+                    {
+                        "type":event["type"],
+                        "status":event["status"],
+                        "content":event["content"]
+                    }
+                )
+                return
             
-        subtasks=await task_splitter(research_plan=research_plan) # handled by task_splitter
-        final_report=await orchestrator(user_query=query,research_plan=research_plan,subtasks=subtasks) # handled by orchestrator
         report=reports(
             content=final_report, # type:ignore
             owner=user_id,
@@ -66,7 +91,7 @@ async def deepResearch(
             yield json.dumps(
                 {
                     "type":"final_report",
-                    "content":final_report
+                    # "content":final_report
                 }
             )
             await db.reports.insert_one(report.model_dump()) # report type is a class, not dict.we need to convert this to a dict

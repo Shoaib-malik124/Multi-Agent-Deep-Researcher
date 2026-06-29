@@ -32,6 +32,9 @@ async def deepResearch(
     user_id=user["sub"] # handeled by verify_jwt
     query=body.query # handled by pydantic
 
+    # Vector Index Pipeline
+
+
     async def streamChunks():
         research_plan=""
         async for event in research_planner(query):
@@ -91,7 +94,7 @@ async def deepResearch(
             yield json.dumps(
                 {
                     "type":"final_report",
-                    # "content":final_report
+                    "content":final_report
                 }
             )
             await db.reports.insert_one(report.model_dump()) # report type is a class, not dict.we need to convert this to a dict
@@ -101,7 +104,7 @@ async def deepResearch(
                 {
                     "type":"error",
                     "status":500,
-                    "content":"Report Insetion to database failed"
+                    "content":f"Report Insetion to database failed: {e}"
                 }
             )
 

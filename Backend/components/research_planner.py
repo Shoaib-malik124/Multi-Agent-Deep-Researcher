@@ -1,6 +1,5 @@
 from huggingface_hub import AsyncInferenceClient
 from prompts.prompts import PLANNER_SYSTEM_INSTRUCTIONS
-from fastapi import HTTPException,status
 import os
 import json
 

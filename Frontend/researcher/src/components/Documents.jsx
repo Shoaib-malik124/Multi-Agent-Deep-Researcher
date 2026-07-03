@@ -1,9 +1,46 @@
 import React from 'react'
-import { useUser } from '@clerk/clerk-react'
+import { useUser,useAuth } from '@clerk/clerk-react'
 import Dashbackground from './Dashbackground.jsx'
+import { fetchEventSource } from '@microsoft/fetch-event-source'
+import Alert  from '@mui/material/Alert';
+
 
 function Documents() {
   const { user } = useUser()
+  const { getToken }=useAuth()
+  const token=getToken()
+  const Backend_url=import.meta.env.BACKEND_URL 
+  const { documents , setDocuments }=useState([])
+
+  const getDocuments=(page_num=1)=>{
+    
+    const Route_url=`${Backend_url}/api/documents/${page_num}`
+    const response=fetchEventSource(Route_url,
+      {
+        method:'GET',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':`Bearer ${token}`
+        }
+      }
+    )
+
+    if(!response.ok){
+      {
+        <Alert severity="error">{response.status}</Alert>
+      }
+      return
+    }
+
+    const data=await response.json()
+    if(!length(data.documents)){
+      {
+        <Alert severity="error">{data.status}</Alert>
+      }
+      return
+    }
+    else setDocuments(data)
+  }
 
   return (
     <main className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 sm:px-6 sm:py-16">

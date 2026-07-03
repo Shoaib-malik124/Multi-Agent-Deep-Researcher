@@ -30,32 +30,26 @@ async def returnDocuments(
     # Fetch the documents from the database for this user and return to the frontend.
     
     if(redis_cache):
-        documents=redis_cache.get(f'{user}:{page_num}')
-        if(documents):
-            return
+        response=redis_cache.get(f'{user}:{page_num}')
+        if(response):
+            return response
     
-    documents=""
+    response={}
     if(db!=None):
-        documents=await get_documents(db_connection=db,user_id=user,page_num=page_number)
-        if(len(documents)):
+        response=await get_documents(db_connection=db,user_id=user,page_num=page_number)
+        if(len(response["documents"])):
             if(redis_cache):
-                redis_cache.set(f'{user}:{page_number}',f'{documents}',ex=3600)
+                redis_cache.set(f'{user}:{page_number}',f'{response}',ex=3600)
     
-    if(len(documents)):
-        return json.dumps(
-            {
-                "type":"documents",
-                "content":documents
-            }
-        )
+    if(len(response["documents"])):
+        return response
     else:
-        return json.dumps(
-            {
-                "type":"empty_response",
-                "status":status.HTTP_404_NOT_FOUND,
-                "content":'No documents availaible'
-            }
-        )
+        response={
+            "total_pages":0,
+            "documents":[],
+            "status":status.HTTP_404_NOT_FOUND
+        }
+        return response
     
 @router.post(
     '/api/research',

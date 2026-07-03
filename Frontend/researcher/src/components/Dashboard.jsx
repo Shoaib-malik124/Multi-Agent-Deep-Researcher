@@ -11,11 +11,12 @@ function Dashboard() {
   const [ planChunks,setPlanChunks ]=useState('')
   const [report,setReport ]=useState('')
 
+  const backendURL=import.meta.env.BACKEND_URL
+  const routeURL=`${backendURL}/api/research`
+  const token=await getToken()
+
   const handleSubmit=async(e)=>{
     e.preventDefault()
-    const backendURL=import.meta.env.BACKEND_URL
-    const routeURL=`${backendURL}/api/research`
-    const token=await getToken()
     await fetchEventSource(routeURL,
       {
         method: 'POST',

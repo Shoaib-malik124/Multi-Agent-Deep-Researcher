@@ -1,6 +1,6 @@
-from fastapi import APIRouter,Depends,Request
+from fastapi import APIRouter,Depends,Request,status
 from authentication.auth import verify_jwt
-from db.db import db
+from db.db import  get_database
 from schemas.query import ResearchRequest
 from components.orchestrator import orchestrator
 from components.task_splitter import task_splitter
@@ -12,16 +12,51 @@ from pymongo.errors import PyMongoError
 from utils.limiter import limiter
 from utils.index_pipeline import check_pipeline,insert_pipeline
 from components.report_merger import merger
+from db.redis import get_redis
+from db.get_documents import get_documents
 import asyncio
 import json
 
 router=APIRouter()
+redis_cache=get_redis()
+db=get_database()
 
-@router.get(f'/api/documents/:${id}')
-async def returnDocuments(user=Depends(verify_jwt)):
+@router.get("/api/documents/{page_num}")
+async def returnDocuments(
+    page_num,
+    user=Depends(verify_jwt)
+):
+    page_number=page_num
     # Fetch the documents from the database for this user and return to the frontend.
-    pass
-
+    
+    if(redis_cache):
+        documents=redis_cache.get(f'{user}:{page_num}')
+        if(documents):
+            return
+    
+    documents=""
+    if(db!=None):
+        documents=await get_documents(db_connection=db,user_id=user,page_num=page_number)
+        if(len(documents)):
+            if(redis_cache):
+                redis_cache.set(f'{user}:{page_number}',f'{documents}',ex=3600)
+    
+    if(len(documents)):
+        return json.dumps(
+            {
+                "type":"documents",
+                "content":documents
+            }
+        )
+    else:
+        return json.dumps(
+            {
+                "type":"empty_response",
+                "status":status.HTTP_404_NOT_FOUND,
+                "content":'No documents availaible'
+            }
+        )
+    
 @router.post(
     '/api/research',
 )
@@ -43,8 +78,9 @@ async def deepResearch(
             # extract the reports from database
             docs=[]
             for id in report_ids:
-                result=await db.find_one({"_id":id})
-                docs.append(result.content)
+                if (db!=None):
+                    result=await db.find_one({"_id":id})
+                    docs.append(result.content)
             # get the formatted report from report_merger
             try:
                 resultant_report=await merger(query,docs)
@@ -122,8 +158,10 @@ async def deepResearch(
             # Store the report and query in the vector store by calling insert_pipeline.
             # report type is a class, not dict.we need to convert this to a dict
             # motor will convert into BSON and will store it in database.
-            response=await db.reports.insert_one(report.model_dump()) 
-            document_id=response.inserted_id()
+            if(db!=None):
+                response=await db.reports.insert_one(report.model_dump()) 
+                document_id=str(response.inserted_id())
+            # clear this user's entries from redis cache
             # Thread that inserts the generated result.
         except PyMongoError as e:
             yield json.dumps(
@@ -133,15 +171,24 @@ async def deepResearch(
                     "content":f"Report Insetion to database failed: {e}"
                 }
             )
-
-        try:
-            event_type,event_content=await asyncio.to_thread(insert_pipeline,query,str(document_id)) # type:ignore
+        except Exception as e:
             yield json.dumps(
                 {
-                    "type":event_type,
-                    "content":event_content
+                    "type":"error",
+                    "status":500,
+                    "content":str(e)
                 }
             )
+
+        try:
+            if(document_id):
+                event_type,event_content=await asyncio.to_thread(insert_pipeline,query,str(document_id)) # type:ignore
+                yield json.dumps(
+                    {
+                        "type":event_type,
+                        "content":event_content
+                    }
+                )
         except Exception:
             yield json.dumps(
                 {

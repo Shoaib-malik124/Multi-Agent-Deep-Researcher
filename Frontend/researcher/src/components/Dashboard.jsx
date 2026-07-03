@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useUser,useAuth } from '@clerk/clerk-react'
 import Dashbackground from './Dashbackground.jsx'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
+import Alert  from '@mui/material/Alert';
 
 function Dashboard() {
   const { user } = useUser()
@@ -40,15 +41,22 @@ function Dashboard() {
             } else if (data.type === 'error') {
                 console.error('Stream error, status: ',data.status)
                 console.error('response:', data.content)
+                {
+                  <Alert severity="error">{`${data.status} :${data.content}`}</Alert>
+                }
                 return
             } 
         },
         onerror(error) {
           console.error('Connection error:', error)
+          {
+            <Alert severity="error">Connection error</Alert>
+          }
           return
         }
       }
     )
+    setQuery('')
   }
 
   return (
@@ -72,7 +80,7 @@ function Dashboard() {
           <textarea
             id="query-taker"
             placeholder={
-              user ? "Describe your research topic" : "Login/Signup to continue"
+              user ? query?planChunks:"Describe your research topic" : "Login/Signup to continue"
             }
             value={query}
             onChange={(e) => setQuery(e.target.value)}

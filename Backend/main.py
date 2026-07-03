@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from routes.apiRoutes import router
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-
+from dotenv import load_dotenv
+load_dotenv()
 from utils.limiter import limiter
 
 

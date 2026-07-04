@@ -21,9 +21,9 @@ router=APIRouter()
 redis_cache=get_redis()
 db=get_database()
 
-@router.get("/api/documents/{page_num}")
+@router.get("/api/documents")
 async def returnDocuments(
-    page_num,
+    page_num:int=1,
     user=Depends(verify_jwt)
 ):
     page_number=page_num

@@ -38,7 +38,7 @@ function NavigationBar() {
               <NavLink to="/" className={linkClasses} >
                 Dashboard
               </NavLink>
-              <NavLink to={`/documents`} className={linkClasses}>
+              <NavLink to="/documents" className={linkClasses}>
                 Documents
               </NavLink>
             </div>

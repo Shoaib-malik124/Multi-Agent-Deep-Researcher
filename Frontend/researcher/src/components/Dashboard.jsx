@@ -13,10 +13,11 @@ function Dashboard() {
 
   const backendURL=import.meta.env.BACKEND_URL
   const routeURL=`${backendURL}/api/research`
-  const token=await getToken()
+  
 
   const handleSubmit=async(e)=>{
     e.preventDefault()
+    const token=await getToken()
     await fetchEventSource(routeURL,
       {
         method: 'POST',

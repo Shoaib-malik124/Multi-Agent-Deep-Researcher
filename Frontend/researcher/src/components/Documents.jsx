@@ -1,81 +1,105 @@
 import React from 'react'
-import { useUser,useAuth } from '@clerk/clerk-react'
+import { useAuth } from '@clerk/clerk-react'
 import Dashbackground from './Dashbackground.jsx'
-import { fetchEventSource } from '@microsoft/fetch-event-source'
 import Alert  from '@mui/material/Alert';
+import { useState,useEffect } from 'react';
+import { DocumentCard } from './DocumentCard.jsx';
+import { PaginationTray } from './paginationTray.jsx';
+import axios from 'axios'
 
 
 function Documents() {
-  const { user } = useUser()
   const { getToken }=useAuth()
-  const token=getToken()
-  const Backend_url=import.meta.env.BACKEND_URL 
-  const { documents , setDocuments }=useState([])
+  
+  const [documents,setDocuments]=useState([])
+  const [page_num,setPage_num]=useState(1)
+  const [total_pages,setTotal_pages]=useState(1)
+  const [loading,setLoading]=useState(false)
+  const [error,setError]=useState(null)
 
-  const getDocuments=(page_num=1)=>{
-    
-    const Route_url=`${Backend_url}/api/documents/${page_num}`
-    const response=fetchEventSource(Route_url,
-      {
-        method:'GET',
-        headers:{
-          'Content-Type':'application/json',
-          'Authorization':`Bearer ${token}`
+  const Backend_url=import.meta.env.VITE_BACKEND_URL // 
+
+  const getDocuments=async (page_num=1)=>{
+    setLoading(true)
+    setError(null)
+    try{
+      const token=await getToken()
+      const Route_url=`${Backend_url}/api/documents`
+      const response=await axios.get(Route_url,
+        {
+          params:{
+            page_num:page_num
+          },
+          headers:{
+            'Authorization':`Bearer ${token}`
+          }
         }
+      )
+      
+      if(response.data){
+        console.log(response.data); 
+        setDocuments(response.data.documents)
+        setTotal_pages(response.data.total_pages)
       }
-    )
-
-    if(!response.ok){
-      {
-        <Alert severity="error">{response.status}</Alert>
-      }
-      return
     }
-
-    const data=await response.json()
-    if(!length(data.documents)){
-      {
-        <Alert severity="error">{data.status}</Alert>
+    catch(error){
+      console.log(error)
+      if (error.response) {
+        setError(`Error ${error.response.status}: ${error.response.data.detail}`)
+      } else {
+        setError('Connection error — please try again')
       }
-      return
     }
-    else setDocuments(data)
+    finally{
+      setLoading(false)
+    }
   }
+
+  useEffect(()=>{
+    getDocuments(page_num)
+  },[page_num])
+
+  if (error) return (
+    <div className="flex items-center justify-center h-screen text-red-500">
+        {error}
+    </div>
+  )
 
   return (
     <main className="relative flex min-h-[calc(100vh-64px)] items-center justify-center overflow-hidden bg-slate-50 px-4 py-10 sm:px-6 sm:py-16">
 
       <Dashbackground />
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">My Research</h1>
 
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-xl shadow-slate-200/50 sm:p-8">
+            {/* Document grid */}
+            {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="bg-gray-200 rounded-xl h-40 animate-pulse"/>
+                    ))}
+                </div>
+            ) : documents.length===0 ? (
+                <div className="text-center text-gray-400 mt-20">
+                    No research reports yet
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {documents.map(doc => (
+                        <DocumentCard key={doc._id} doc={doc} />
+                    ))}
+                </div>
+            )}
 
-        <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 sm:mb-5 sm:h-12 sm:w-12">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 text-indigo-500 sm:h-6 sm:w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.8}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+            {/* Pagination tray — only show if more than one page */}
+            {total_pages > 1 && (
+                <PaginationTray
+                    currentPage={page_num}
+                    totalPages={total_pages}
+                    onPageChange={setPage_num}
+                />
+            )}
         </div>
-
-        <h1 className="mb-1 text-lg font-bold text-slate-900 sm:text-xl">
-          Your document is ready
-        </h1>
-        <p className="mb-5 text-sm text-slate-500 sm:mb-6">
-          We've finished generating your research document. Download it below.
-        </p>
-
-        <button
-          className="w-full rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Download
-        </button>
-
-      </div>
     </main>
   )
 }

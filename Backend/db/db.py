@@ -9,5 +9,5 @@ def get_database():
         client=AsyncIOMotorClient(MONGO_URI)
         db=client[DB_NAME]
         return db
-    except Exception as e:
+    except Exception:
         return None

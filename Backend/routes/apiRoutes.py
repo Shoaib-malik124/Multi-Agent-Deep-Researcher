@@ -26,35 +26,28 @@ async def returnDocuments(
     page_num:int=1,
     user=Depends(verify_jwt)
 ):
+    user_id=user["sub"]
     page_number=page_num
     # Fetch the documents from the database for this user and return to the frontend.
     
     if(redis_cache):
-        response=redis_cache.get(f'{user}:{page_num}')
+        response=redis_cache.get(f'{user_id}:{page_num}')
         if(response):
             return response
     
     response={}
     if(db!=None):
-        response=await get_documents(db_connection=db,user_id=user,page_num=page_number)
-        if(len(response["documents"])):
+        response=await get_documents(db_connection=db,user_id=user_id,page_num=page_number)
+        if(response["total_pages"]):
             if(redis_cache):
-                redis_cache.set(f'{user}:{page_number}',f'{response}',ex=3600)
+                redis_cache.set(f'{user_id}:{page_number}',f'{response}',ex=3600)
     
-    if(len(response["documents"])):
-        return response
-    else:
-        response={
-            "total_pages":0,
-            "documents":[],
-            "status":status.HTTP_404_NOT_FOUND
-        }
-        return response
+    return response
     
 @router.post(
     '/api/research',
 )
-@limiter.limit("5/minute")
+@limiter.limit("1/hour")
 async def deepResearch(
     request:Request,
     body:ResearchRequest,
@@ -136,6 +129,7 @@ async def deepResearch(
                 return
             
         report=reports(
+            query=query,
             content=final_report, # type:ignore
             owner=user_id,
             created_at=datetime.now(timezone.utc)

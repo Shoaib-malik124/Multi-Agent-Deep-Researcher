@@ -7,19 +7,18 @@ import { DocumentCard } from './DocumentCard.jsx';
 import { PaginationTray } from './paginationTray.jsx';
 import axios from 'axios'
 
-
 function Documents() {
   const { getToken }=useAuth()
   
   const [documents,setDocuments]=useState([])
   const [page_num,setPage_num]=useState(1)
-  const [total_pages,setTotal_pages]=useState(1)
+  const [total_pages,setTotal_pages]=useState(0)
   const [loading,setLoading]=useState(false)
   const [error,setError]=useState(null)
 
   const Backend_url=import.meta.env.VITE_BACKEND_URL // 
 
-  const getDocuments=async (page_num=1)=>{
+  const getDocuments=async ()=>{
     setLoading(true)
     setError(null)
     try{
@@ -37,13 +36,11 @@ function Documents() {
       )
       
       if(response.data){
-        console.log(response.data); 
         setDocuments(response.data.documents)
         setTotal_pages(response.data.total_pages)
       }
     }
     catch(error){
-      console.log(error)
       if (error.response) {
         setError(`Error ${error.response.status}: ${error.response.data.detail}`)
       } else {

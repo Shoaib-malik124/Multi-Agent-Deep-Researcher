@@ -1,6 +1,5 @@
 from smolagents import ToolCallingAgent, MCPClient, InferenceClientModel, tool
 from prompts.prompts import COORDINATOR_PROMPT_TEMPLATE, SUBAGENT_PROMPT_TEMPLATE
-from fastapi import HTTPException, status
 import os
 import json
 import asyncio

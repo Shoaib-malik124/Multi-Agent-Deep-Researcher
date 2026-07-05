@@ -16,6 +16,9 @@ from db.redis import get_redis
 from db.get_documents import get_documents
 import asyncio
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 router=APIRouter()
 redis_cache=get_redis()
@@ -29,20 +32,26 @@ async def returnDocuments(
     user_id=user["sub"]
     page_number=page_num
     # Fetch the documents from the database for this user and return to the frontend.
-    
-    if(redis_cache):
-        response=redis_cache.get(f'{user_id}:{page_num}')
-        if(response):
-            return response
-    
     response={}
-    if(db!=None):
-        response=await get_documents(db_connection=db,user_id=user_id,page_num=page_number)
-        if(response["total_pages"]):
-            if(redis_cache):
-                redis_cache.set(f'{user_id}:{page_number}',f'{response}',ex=3600)
+    try:
+        if(redis_cache):
+            response=redis_cache.get(f'{user_id}:{page_num}')
+            if(response):
+                return response
+    except Exception as e:
+        logger.error(f'redis error: {e}')
+        return response
     
-    return response
+    try:
+        if(db!=None):
+            response=await get_documents(db_connection=db,user_id=user_id,page_num=page_number)
+            if(response["total_pages"]):
+                if(redis_cache):
+                    redis_cache.set(f'{user_id}:{page_number}',f'{response}',ex=3600)
+        return response
+    except Exception as e:
+        logger.error(f'Database/redis error, {e}')
+        return response
     
 @router.post(
     '/api/research',
@@ -59,26 +68,27 @@ async def deepResearch(
 
     async def streamChunks():
         # Thread that checks for similar queries recieved in the past.
-        event_type,event_content=await asyncio.to_thread(check_pipeline,query) # type:ignore
-        if event_type=="report_ids":
-            report_ids=event_content
+        report_ids=await asyncio.to_thread(check_pipeline,query) # type:ignore
+        if len(report_ids):
             # extract the reports from database
             docs=[]
-            for id in report_ids:
-                if (db!=None):
+            if(db!=None):
+                for id in report_ids:
                     result=await db.find_one({"_id":id})
                     docs.append(result.content)
-            # get the formatted report from report_merger
-            try:
-                resultant_report=await merger(query,docs)
-                # yield the output
-                yield json.dumps({
-                    "type":"final_report",
-                    "content":resultant_report
-                })
-                return
-            except Exception:
-                pass # we have to simply perform the research if report was not generated.
+                # get the formatted report from report_merger
+                try:
+                    resultant_report=await merger(query,docs)
+                    if(len(resultant_report)):
+                        # yield the output
+                        yield json.dumps({
+                            "type":"final_report",
+                            "content":resultant_report
+                        })
+                        return
+                except Exception as e:
+                    logger.error(f'Merger agent error: {e}')
+                    # we have to simply perform the research if report was not generated.
 
         research_plan=""
         async for event in research_planner(query):
@@ -152,38 +162,28 @@ async def deepResearch(
             # clear this user's entries from redis cache
             # Thread that inserts the generated result.
         except PyMongoError as e:
+            logger.error(f"Report Insetion to database failed: {e}")
             yield json.dumps(
                 {
                     "type":"error",
                     "status":500,
-                    "content":f"Report Insetion to database failed: {e}"
+                    "content":""
                 }
             )
         except Exception as e:
+            logger.error(f"database error: {e}")
             yield json.dumps(
                 {
                     "type":"error",
                     "status":500,
-                    "content":str(e)
+                    "content":""
                 }
             )
 
-        try:
-            if(document_id):
-                event_type,event_content=await asyncio.to_thread(insert_pipeline,query,str(document_id)) # type:ignore
-                yield json.dumps(
-                    {
-                        "type":event_type,
-                        "content":event_content
-                    }
-                )
-        except Exception:
-            yield json.dumps(
-                {
-                    "type":event_type,
-                    "content":event_content
-                }
-            )
+        
+        if(document_id):
+            message=await asyncio.to_thread(insert_pipeline,query,str(document_id)) # type:ignore
+            logger.info(message)
 
     return StreamingResponse(
         streamChunks(),

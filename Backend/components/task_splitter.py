@@ -2,7 +2,6 @@ from huggingface_hub import AsyncInferenceClient
 from prompts.prompts import TASK_SPLITTER_SYSTEM_INSTRUCTIONS
 from pydantic import BaseModel, Field,ValidationError
 from typing import List
-from fastapi import HTTPException,status
 import logging
 import os
 import json

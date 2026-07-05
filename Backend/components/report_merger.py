@@ -3,12 +3,17 @@ from huggingface_hub import AsyncInferenceClient
 from prompts.prompts import MERGER_PROMPT_TEMPLATE
 import os
 import json
+import logging
+
+logger = logging.getLogger(__name__)
+
 async def merger(user_query:str,docs:List):
     try:
         hf_token=os.environ["HF_TOKEN"]
         model_id=os.environ["PLANNER_MODEL_ID"]
     except KeyError as e:
-        raise KeyError()
+        logger.error(f'Merger agent key error: {e}')
+        return ""
     
     try: 
         reports_json=json.dumps( # { {text},{text},{text} }
@@ -38,11 +43,13 @@ async def merger(user_query:str,docs:List):
                 }
             ],
         )
-    except Exception:
-        return # Because if merger has failed to generate a final response, we have to simply call the research pipeline.
+    except Exception as e:
+        logger.error(f'Merger Agent error: {e}')
+        return "" # Because if merger has failed to generate a final response, we have to simply call the research pipeline.
 
     try:
         final_report=completion.choices[0].message    
         return final_report
-    except Exception:
-        return # Because if merger has failed to generate a final response, we have to simply call the research pipeline.
+    except Exception as e:
+        logger.error(f'Merger Agent error: {e}')
+        return "" # Because if merger has failed to generate a final response, we have to simply call the research pipeline.

@@ -1,0 +1,7 @@
+madr/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.gitignore
+*.md

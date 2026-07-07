@@ -11,7 +11,7 @@ function Dashboard() {
   const [ planChunks,setPlanChunks ]=useState('')
   const [report,setReport ]=useState('')
 
-  const backendURL=import.meta.env.BACKEND_URL
+  const backendURL=import.meta.env.VITE_BACKEND_URL
   const routeURL=`${backendURL}/api/research`
   
 
@@ -39,6 +39,8 @@ function Dashboard() {
                 setPlanChunks(data.content)
             } else if (data.type === 'final_report') {
                 setReport(data.content)
+                setQuery('')
+                setPlanChunks('')
                 return
             } else if (data.type === 'error') {
                 console.error('Stream error, status: ',data.status)
@@ -59,6 +61,7 @@ function Dashboard() {
       }
     )
     setQuery('')
+    setPlanChunks('')
   }
 
   return (

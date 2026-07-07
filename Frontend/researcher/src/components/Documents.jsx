@@ -44,7 +44,7 @@ function Documents() {
       if (error.response) {
         setError(`Error ${error.response.status}: ${error.response.data.detail}`)
       } else {
-        setError(Backend_url)
+        setError('Connection error — please try again')
       }
     }
     finally{

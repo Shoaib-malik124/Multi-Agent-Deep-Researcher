@@ -111,7 +111,7 @@ Each element has the shape:
 }}
 
 You have access to a tool called:
-• initialize_subagent(subtask_id: str, subtask_title: str, subtask_description: str)
+• create_subagent(subtask_id: str, subtask_title: str, subtask_description: str)
 
 Your job:
 1. For EACH subtask in the JSON array, call initialize_subagent exactly once

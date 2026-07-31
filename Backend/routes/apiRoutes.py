@@ -160,6 +160,8 @@ async def deepResearch(
                 response=await db.reports.insert_one(report.model_dump()) 
                 document_id=str(response.inserted_id())
             # clear this user's entries from redis cache
+            if(redis_cache):
+                redis_cache.delete(f'{user_id}:*')
             # Thread that inserts the generated result.
         except PyMongoError as e:
             logger.error(f"Report Insetion to database failed: {e}")

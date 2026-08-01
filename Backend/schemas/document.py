@@ -1,7 +1,7 @@
 from pydantic import BaseModel,Field
 from datetime import datetime
 
-class reports(BaseModel):
+class Reports(BaseModel):
     query:str=Field(
         ...,
         description="The user query for which the report is generated"

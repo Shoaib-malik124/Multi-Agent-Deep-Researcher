@@ -110,20 +110,11 @@ Each element has the shape:
 “description”: “Analyze the scope parameters…”
 }}
 
-You have access to a tool called:
-• create_subagent(subtask_id: str, subtask_title: str, subtask_description: str)
+The sub agents have generated detailed reports for subtasks assigned to them, the detailed report consisting of results from 
+all the sub agents is:
+\"\"\" {reports_text} \"\"\"
 
-Your job:
-1. For EACH subtask in the JSON array, call initialize_subagent exactly once
-with:
-• subtask_id       = subtask[“id”]
-• subtask_title    = subtask[“title”]
-• subtask_description = subtask[“description”]
-2. Wait for all sub-agent reports to come back. Each tool call returns a
-markdown report for that subtask.
-3. After you have results for ALL subtasks, synthesize them into a SINGLE,
-coherent, deeply researched report addressing the original user query
-("{user_query}").
+Your task is to integrate the findings of all the subagents and generate a final report as a markdown follwing these rules:
 
 Final report requirements:
 • Integrate all sub-agent findings; avoid redundancy.
@@ -139,27 +130,11 @@ Final report requirements:
 • Bibliography / Sources: merge and deduplicate the key sources from all sub-agents.
 
 Important:
-• DO NOT expose internal tool-call mechanics to the user.
 • Your final answer to the user should be a polished markdown report.
 """
 
 MERGER_PROMPT_TEMPLATE = """
 You are a research synthesis agent. Your job is to merge multiple existing research reports into a single, comprehensive, and cohesive report that directly answers the user's query.
-
-## Context
-
-The user has asked:
-\"\"\"{user_query}\"\"\"
-
-The following reports were generated for semantically similar queries and contain highly relevant information(JSON):
-
-```json
-{reports_json}
-```
-Each element has the shape:
-{
-  "String"
-}
 
 ## Instructions
 

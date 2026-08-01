@@ -2,9 +2,9 @@ from huggingface_hub import AsyncInferenceClient
 from prompts.prompts import TASK_SPLITTER_SYSTEM_INSTRUCTIONS
 from pydantic import BaseModel, Field,ValidationError
 from typing import List
-import logging
 import os
 import json
+import logging
 
 logger=logging.getLogger(__name__)
 
@@ -24,17 +24,8 @@ TASK_SPLITTER_JSON_SCHEMA = {
 
 async def task_splitter(research_plan: str):
 
-    try:
-        hf_token=os.environ["HF_TOKEN"]
-        model_id=os.environ["TASK_SPLITTER_MODEL_ID"]
-
-    except KeyError as e:
-        yield {
-                "type":"error",
-                "status":500,
-                "content":f"Server misconfiguration, missing: {str(e)}"
-            }
-        return
+    hf_token=os.environ["HF_TOKEN"]
+    model_id=os.environ["TASK_SPLITTER_MODEL_ID"]
     
     try:
         splitter_client = AsyncInferenceClient(
@@ -55,42 +46,46 @@ async def task_splitter(research_plan: str):
             stream=False
         )
     except Exception as e:
+        logger.error(f"Task splitter HF connection error: {e}")
         yield {
                 "type":"error",
                 "status":502,
-                "content":f"Text splitter API error: {str(e)}"
+                "content":"Internal Server error"
             }
         return
     
     try:
         result = completion.choices[0].message
-        logger.debug("Raw model response: %s", result.content)
         subtasks = json.loads(result.content)['subtasks']
         yield {
                 "type":"subTaskList",
                 "content":SubTaskList(subtasks=subtasks).subtasks
             }
     except (IndexError, AttributeError) as e:
+        logger.error(f"Model returned unexpected response structure: {e}")
         yield {
                 "type":"error",
                 "status":502,
-                "content":"Model returned unexpected response structure"
+                "content":"Internal Server error"
             }
     except json.JSONDecodeError as e:
+        logger.error(f"Model returned invalid JSON: {e}")
         yield {
                 "type":"error",
                 "status":502,
-                "content":"Model returned invalid JSON"
+                "content":"Internal Server Error"
             }
-    except KeyError:
+    except KeyError as e:
+        logger.error(f"Model response missing 'subtasks' key; {e}")
         yield {
                 "type":"error",
                 "status":502,
-                "content":"Model response missing 'subtasks' key"
+                "content":"Internal Server Error"
             }
     except ValidationError as e:
+        logger.error(f"Model response failed schema validation: {e}")
         yield {
                 "type":"error",
                 "status":502,
-                "content":"Model response failed schema validation"
+                "content":"Internal Server Error"
             }

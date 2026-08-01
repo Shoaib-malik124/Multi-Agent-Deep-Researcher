@@ -7,26 +7,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-async def merger(user_query:str,docs:List):
-    try:
-        hf_token=os.environ["HF_TOKEN"]
-        model_id=os.environ["PLANNER_MODEL_ID"]
-    except KeyError as e:
-        logger.error(f'Merger agent key error: {e}')
-        return ""
+async def merger(user_query:str,docs:List[str]):
+    hf_token=os.environ["HF_TOKEN"]
+    model_id=os.environ["PLANNER_MODEL_ID"]
     
     try: 
-        reports_json=json.dumps( # { {text},{text},{text} }
-            [s.model_dump() for s in docs],
-            indent=2,
-            ensure_ascii=False
+        reports_text = "\n\n---\n\n".join(
+            [f"Report {i+1}:\n{doc}" for i, doc in enumerate(docs)]
         )
-        planner_client=AsyncInferenceClient(
+        merger_client=AsyncInferenceClient(
             api_key=hf_token,
             provider="auto"
         )
         
-        completion=await planner_client.chat.completions.create(
+        completion=await merger_client.chat.completions.create(
             model=model_id,
             messages=[
                 {"role":"system","content":MERGER_PROMPT_TEMPLATE},
@@ -38,18 +32,18 @@ async def merger(user_query:str,docs:List):
                     The following reports were generated for semantically similar queries.
                     Merge them into one report.
 
-                    {reports_json}
+                    {reports_text}
                     """
                 }
             ],
         )
     except Exception as e:
         logger.error(f'Merger Agent error: {e}')
-        return "" # Because if merger has failed to generate a final response, we have to simply call the research pipeline.
+        return "" 
 
     try:
-        final_report=completion.choices[0].message    
-        return final_report
+        final_report=completion.choices[0].message.content 
+        return final_report 
     except Exception as e:
-        logger.error(f'Merger Agent error: {e}')
-        return "" # Because if merger has failed to generate a final response, we have to simply call the research pipeline.
+        logger.error(f'Merger Agent failed to generate the report: {e}')
+        return "" 

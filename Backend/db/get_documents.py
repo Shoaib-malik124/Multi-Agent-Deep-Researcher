@@ -1,4 +1,7 @@
 import math
+import logging
+logger=logging.getLogger(__name__)
+
 async def get_documents(db_connection,user_id:str,page_num:int,page_content:int=10):
     try:
         total_documents=await db_connection.reports.count_documents({"owner":user_id})
@@ -14,7 +17,8 @@ async def get_documents(db_connection,user_id:str,page_num:int,page_content:int=
             "total_pages":total_pages,
             "documents":documents
         }
-    except Exception:
+    except Exception as e:
+        logger.error(f"get_documents error: {e}")
         return {
             "total_pages":0,
             "documents":[]

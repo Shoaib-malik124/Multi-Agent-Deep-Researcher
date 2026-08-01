@@ -1,27 +1,22 @@
 from huggingface_hub import AsyncInferenceClient
 from prompts.prompts import PLANNER_SYSTEM_INSTRUCTIONS
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 def _content(obj):
     try:
         return obj.choices[0].delta.content
-    except Exception:
+    except Exception as e:
         try:
             return obj.choices[0].message.content
         except Exception:
             return None
         
 async def research_planner(user_query:str):
-    try:
-        hf_token=os.environ["HF_TOKEN"]
-        model_id=os.environ["PLANNER_MODEL_ID"]
-    except KeyError as e:
-        yield {
-              "type":"error",
-              "status":500,
-              "content":f"Server misconfiguration: missing {str(e)}"
-            }
-        return
+    hf_token=os.environ["HF_TOKEN"]
+    model_id=os.environ["PLANNER_MODEL_ID"]
     
     try:
         planner_client=AsyncInferenceClient(
@@ -41,9 +36,9 @@ async def research_planner(user_query:str):
         yield {
               "type":"error",
               "status":502,
-              "content":f"Planner, API error: {str(e)}"
+              "content":f"Internal Server Error"
             }
-        
+        logger.error(f"Research planner HF connection error: {e}")
         return
 
     research_plan=""
@@ -57,17 +52,14 @@ async def research_planner(user_query:str):
         if research_plan:
             yield {"type":"plan","content":research_plan}
         else:
-            yield {"type":"error","status":502,"content":"Planner Model failed to generate research plan"}
+            logger.error("Planner Model failed to generate research plan")
+            yield {"type":"error","status":502,"content":"Internal Server Error"}
             
     except TypeError:
-        try:
-            c=_content(completion)
-            if c:
-                research_plan=c
-                yield {"type":"plan","content":research_plan}
-            else:
-                yield {"type":"error","status":502,"content":"Planner Model failed to generate research plan"}
-        except Exception as e:
-            yield {"type":"error","status":502,"content":"Planner Model failed to generate research plan"}
-    except Exception as e:
-        yield {"type":"error","status":502,"content":"Planner Model failed to generate research plan"}
+        c=_content(completion)
+        if c:
+            research_plan=c
+            yield {"type":"plan","content":research_plan}
+        else:
+            logger.error("Planner Model failed to generate research plan")
+            yield {"type":"error","status":502,"content":"Internal Server Error"}

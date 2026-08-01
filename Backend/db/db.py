@@ -1,13 +1,4 @@
-import os
-from motor.motor_asyncio import AsyncIOMotorClient
+from fastapi import Request
 
-def get_database():
-    try:
-        MONGO_URI=os.environ["MONGO_URI"]
-        DB_NAME=os.environ["DB_NAME"]
-
-        client=AsyncIOMotorClient(MONGO_URI)
-        db=client[DB_NAME]
-        return db
-    except Exception:
-        return None
+def get_db(request: Request):
+    return request.app.state.db

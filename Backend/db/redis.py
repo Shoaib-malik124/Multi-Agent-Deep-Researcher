@@ -1,10 +1,4 @@
-import redis
-import os
+from fastapi import Request
 
-def get_redis():
-    try:
-        redis_url=os.environ["REDIS_URL"]
-        r = redis.Redis.from_url(redis_url)
-        return r
-    except Exception:
-        return None
+def get_redis(request: Request):
+    return request.app.state.redis

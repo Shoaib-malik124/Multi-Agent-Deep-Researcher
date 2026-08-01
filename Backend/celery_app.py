@@ -1,6 +1,7 @@
 from celery import Celery
 from dotenv import load_dotenv
 import os
+import ssl
 
 load_dotenv()
 
@@ -18,9 +19,9 @@ celery_app.conf.update(
     task_track_started=True,
     result_expires=3600,
     broker_use_ssl={
-        "ssl_cert_reqs": "CERT_NONE"
+        "ssl_cert_reqs": ssl.CERT_NONE
     },
     redis_backend_use_ssl={
-        "ssl_cert_reqs": "CERT_NONE"
+        "ssl_cert_reqs": ssl.CERT_NONE
     },
 )
